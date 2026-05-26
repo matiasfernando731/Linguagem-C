@@ -1,2 +1,1024 @@
 # Linguagem-C
 Descrição do Sistema (linguagem C)
+/*=============================================================
+ *  MEMBROS DO GRUPO:
+ *  - Brian Thiago Apaza Porcel.
+ *  - Vitor Hugo Gonçalves de Carvalho.
+ *  - Lucas Gustavo Fernandes de Souza.
+ *  - Matias Fernando Mamani.
+ *  - William Campos de Araújo.
+ *  - Victor Emanoel Rocha Costa.
+ *  - Arthur Alexandre Candido.
+ *==============================================================
+ 
+ *==============================================================
+ *  SISTEMA DE PEDIDOS - PIZZARIA UNINOVE
+ * ============================================================
+ *  Programa de terminal para gerenciar pedidos de pizzas e
+ *  bebidas, exibir histórico de vendas e listar produtos.
+ *
+ *  Bibliotecas utilizadas:
+ *    - stdio.h  : entrada e saída padrão (printf, scanf, fgets)
+ *    - stdlib.h : funções gerais (system)
+ *    - unistd.h : funções POSIX (sleep, usleep)
+ *    - string.h : manipulação de strings (strcmp, strcpy, strcat)
+ * ============================================================
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+int main()
+{
+    /* ----------------------------------------------------------
+     * DECLARAÇÃO DE VARIÁVEIS DE CONTROLE
+     * ----------------------------------------------------------
+     * opc         : opção escolhida no menu principal
+     * contador    : índice usado nos laços for de pedidos
+     * pedido      : número da pizza selecionada
+     * qtdPedido   : quantidade de pizzas que o cliente quer
+     * bebida      : número da bebida selecionada
+     * qtdBebida   : quantidade de bebidas que o cliente quer
+     * ---------------------------------------------------------- */
+    int opc, contador = 1, pedido, qtdPedido, bebida, qtdBebida;
+
+    /* ----------------------------------------------------------
+     * VARIÁVEIS DE VALOR MONETÁRIO
+     * Acumulam o total de cada categoria ao longo de um pedido.
+     * ---------------------------------------------------------- */
+    double totalPedido = 0,   /* soma das pizzas no pedido atual  */
+           totalBebida = 0,   /* soma das bebidas no pedido atual */
+           total       = 0;   /* subtotal (pizzas + bebidas)      */
+
+    /* ----------------------------------------------------------
+     * PREÇOS FIXOS POR CATEGORIA DE PIZZA
+     *   precoTrad : pizzas tradicionais (1–7)   → R$ 29,90
+     *   precoEsp  : pizzas especiais   (8–14)   → R$ 39,90
+     *   precoDoce : pizzas doces       (15–18)  → R$ 44,90
+     * ---------------------------------------------------------- */
+    double precoTrad = 29.90,
+           precoEsp  = 39.90,
+           precoDoce = 44.90;
+
+    /* Buffer para armazenar respostas de sim/não do usuário */
+    char resposta[10];
+
+    /* ----------------------------------------------------------
+     * ESTRUTURAS DE HISTÓRICO DE VENDAS
+     *   HistoricoPedidos        : vetor com o valor total de cada
+     *                             venda registrada (até 100)
+     *   TotaldeVendasRealizadas : contador de vendas feitas
+     *   Pizzas / Bebidas        : strings com os nomes dos itens
+     *                             pedidos em cada venda
+     *   TotalGanho              : acumulador do faturamento total
+     *                             (usado na tela de registro)
+     * ---------------------------------------------------------- */
+    double HistoricoPedidos[100];
+    int    TotaldeVendasRealizadas = 0;
+    char   Pizzas [100][500];
+    char   Bebidas[100][500];
+    double TotalGanho = 0;
+   
+    /* ==========================================================
+     * LAÇO PRINCIPAL DO PROGRAMA  (do-while)
+     * Exibe o menu e repete até o usuário escolher a opção 0.
+     * ========================================================== */
+    do{
+       
+        /* Limpa a tela e imprime o menu principal com formatação
+         * ANSI (cores, negrito, sublinhado). */
+        system("clear");
+        printf("\n                                           \033[4;1;40mSEJA BEM-VINDO!\033[m\n");
+        printf("                                                  a\n");
+        printf("                                          \033[4;1;31mPIZZARIA\033[m \033[4;1;34mUNINOVE\033[m\n");
+        printf("\n                   \033[1mMENU PRINCIPAL\033[m\n\n");
+        printf("    \033[4;1m1 - FAZER PEDIDO\033[m ✏️\n\n");
+        printf("    \033[4;1m2 - REGISTRO DE PEDIDOS️️\033[m 🗃️\n\n");
+        printf("    \033[4;1m3 - LISTA DE PRODUTOS\033[m\n\n");
+        printf("    \033[4;1;31m0 - SAIR\033[m\n");
+        printf("\n  DIGITE SUA OPÇÃO DE INTERESSE: ");
+        scanf("%d", &opc);
+       
+        /* Valida se a opção está fora do intervalo permitido (1–4 ou 0) */
+        if(opc >= 5){
+            printf("\n \033[31mOPÇÃO INVÁLIDA! TENTE NOVAMENTE...\033[m\n");
+            sleep(3);
+            continue; /* volta ao início do do-while sem executar o restante */
+        }
+       
+        /* ======================================================
+         * OPÇÃO 1 — FAZER PEDIDO
+         * ====================================================== */
+        if(opc == 1){
+           
+            /* ----------------------------------------------------
+             * Laço interno: garante que o usuário informe
+             * uma quantidade de pizzas maior que zero.
+             * ---------------------------------------------------- */
+            do{
+                /* Reinicia os acumuladores a cada novo pedido */
+                totalPedido = 0;
+                totalBebida = 0;
+                total       = 0;
+                TotalGanho  = 0;
+               
+                /* Limpa as strings de itens para o pedido atual */
+                strcpy(Pizzas [TotaldeVendasRealizadas], "");
+                strcpy(Bebidas[TotaldeVendasRealizadas], "");
+               
+                /* Exibe o cardápio completo de pizzas com usleep()
+                 * para criar um pequeno efeito de carregamento. */
+                system("clear");
+                printf("\n                                                                        \033[4;1;40m🍕  CARDÁPIO 🍕\033[m\n");
+                printf("\n            \033[1;31m🔥 TRADICIONAIS DA FAMÍLIA!🔥\033[m                       \033[1;33m⭐ PIZZAS ESPECIAIS!⭐\033[m                             \033[1;36m🍫 PIZZAS DOCES!🍫\033[m\n");
+                printf("           1 - MUSSARELA.................\033[4;1mR$29,90\033[m            8  - 4 QUEIJOS................\033[4;1mR$39,90\033[m            15 - BRIGADEIRO................\033[4;1mR$44,90\033[m\n");
+                printf("           2 - CALABRESA.................\033[4;1mR$29,90\033[m            9  - MODA DA CASA.............\033[4;1mR$39,90\033[m            16 - CHOCOLATE C/ MORANGO......\033[4;1mR$44,90\033[m\n");
+                printf("           3 - BAURU.....................\033[4;1mR$29,90\033[m            10 - BRÓCOLIS.................\033[4;1mR$39,90\033[m            17 - ROMEU & JULIETA...........\033[4;1mR$44,90\033[m\n");
+                printf("           4 - FRANGO COM CATUPIRY.......\033[4;1mR$29,90\033[m            11 - BACON....................\033[4;1mR$39,90\033[m            18 - BANANA COM CANELA.........\033[4;1mR$44,90\033[m\n");
+                printf("           5 - TOSCANA...................\033[4;1mR$29,90\033[m            12 - MILHO....................\033[4;1mR$39,90\033[m\n");
+                printf("           6 - BAIANA....................\033[4;1mR$29,90\033[m            13 - ATUM.....................\033[4;1mR$39,90\033[m\n");
+                printf("           7 - PORTUGUESA................\033[4;1mR$29,90\033[m            14 - PEPPERONI................\033[4;1mR$39,90\033[m\n");
+                usleep(1500000); /* aguarda 1,5 s antes de pedir a quantidade */
+               
+                printf("\n \033[4;1;34mQUANTAS PIZZAS VOCÊ DESEJA COMPRAR?\033[m: ");
+                scanf("%d", &qtdPedido);
+               
+                /* Informa o usuário caso ele tente pedir 0 pizzas */
+                if(qtdPedido < 1){
+                    printf("\n\n \033[31mSEM REGISTRO DE PEDIDO...\033[m\n");
+                    sleep(3);
+                    continue;
+                }
+               
+            }while(qtdPedido <= 0); /* repete enquanto a quantidade for inválida */
+           
+            /* ----------------------------------------------------
+             * Laço for: percorre cada pizza pedida pelo cliente.
+             * Para cada iteração exibe o número do pedido,
+             * lê a escolha, imprime os ingredientes e
+             * acumula o preço em totalPedido.
+             * O switch também concatena o nome da pizza
+             * na string Pizzas[TotaldeVendasRealizadas].
+             * ---------------------------------------------------- */
+            for(contador = 1; contador <= qtdPedido; contador++){
+                printf("\n \033[1mSELECIONE O %d° PEDIDO:\033[m ", contador);
+                scanf("%d", &pedido);
+               
+                /* Switch: cada case corresponde a um sabor do cardápio */
+                switch(pedido){
+                    case 1:
+                        printf("\n \033[4;1m- MUSSARELA\033[m");
+                        printf("\n Ingredientes: Mussarela, Tomate e Orégano. \n");
+                        totalPedido += precoTrad;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Mussarela, ");
+                        break;
+                    case 2:
+                        printf("\n \033[4;1m- CALABRESA\033[m");
+                        printf("\n Ingredientes: Calabresa, Cebola e Orégano. \n");
+                        totalPedido += precoTrad;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Calabresa, ");
+                        break;
+                    case 3:
+                        printf("\n \033[4;1m- BAURU\033[m");
+                        printf("\n Ingredientes: Mussarela, Presunto, Tomate e Orégano. \n");
+                        totalPedido += precoTrad;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Bauru, ");
+                        break;
+                    case 4:
+                        printf("\n \033[4;1m- FRANGO COM CATUPIRY\033[m");
+                        printf("\n Ingredientes: Frango desfiado, Catupiry e Orégano. \n");
+                        totalPedido += precoTrad;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Frango com Catupiry, ");
+                        break;
+                    case 5:
+                        printf("\n \033[4;1m- TOSCANA\033[m");
+                        printf("\n Ingredientes: Linguiça toscana, Mussarela, Cebola e Orégano. \n");
+                        totalPedido += precoTrad;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Toscana, ");
+                        break;
+                    case 6:
+                        printf("\n \033[4;1m- BAIANA\033[m");
+                        printf("\n Ingredientes: Mussarela, Calabresa moída, Ovo, Cebola, Pimenta e Orégano. \n");
+                        totalPedido += precoTrad;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Baiana, ");
+                        break;
+                    case 7:
+                        printf("\n \033[4;1m- PORTUGUESA\033[m");
+                        printf("\n Ingredientes: Mussarela, Presunto, Ovo, Cebola, Ervilha e Orégano. \n");
+                        totalPedido += precoTrad;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Portuguesa, ");
+                        break;
+                    case 8:
+                        printf("\n \033[4;1m- 4 QUEIJOS\033[m");
+                        printf("\n Ingredientes: Queijo, Catupiry, Provolone, Parmesão e Orégano. \n");
+                        totalPedido += precoEsp;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "4 Queijos, ");
+                        break;
+                    case 9:
+                        printf("\n \033[4;1m- MODA DA CASA\033[m");
+                        printf("\n Ingredientes: Mussarela, Presunto, Calabresa, Bacon, Cebola, Milho e Orégano. \n");
+                        totalPedido += precoEsp;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Moda da casa, ");
+                        break;
+                    case 10:
+                        printf("\n \033[4;1m- BRÓCOLIS\033[m");
+                        printf("\n Ingredientes: Brócolis, Mussarela, Bacon, Alho e Orégano. \n");
+                        totalPedido += precoEsp;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Brócolis, ");
+                        break;
+                    case 11:
+                        printf("\n \033[4;1m- BACON\033[m");
+                        printf("\n Ingredientes: Bacon, Mussarela, Cebola e Orégano. \n");
+                        totalPedido += precoEsp;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Bacon, ");
+                        break;
+                    case 12:
+                        printf("\n \033[4;1m- MILHO\033[m");
+                        printf("\n Ingredientes: Milho, Mussarela e Orégano. \n");
+                        totalPedido += precoEsp;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Milho, ");
+                        break;
+                    case 13:
+                        printf("\n \033[4;1m- ATUM\033[m");
+                        printf("\n Ingredientes: Atum, Mussarela, Cebola e Orégano. \n");
+                        totalPedido += precoEsp;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Atum, ");
+                        break;
+                    case 14:
+                        printf("\n \033[4;1m- PEPPERONI\033[m");
+                        printf("\n Ingredientes: Pepperoni, Mussarela e Orégano. \n");
+                        totalPedido += precoEsp;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Pepperoni, ");
+                        break;
+                    case 15:
+                        printf("\n \033[4;1m- BRIGADEIRO\033[m");
+                        printf("\n Ingredientes: Chocolate, Granulado e Leite Condensado. \n");
+                        totalPedido += precoDoce;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Brigadeiro, ");
+                        break;
+                    case 16:
+                        printf("\n \033[4;1m- CHOCOLATE C/ MORANGO\033[m");
+                        printf("\n Ingredientes: Chocolate, Morango e Leite Condensado. \n");
+                        totalPedido += precoDoce;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Chocolate com morango, ");
+                        break;
+                    case 17:
+                        printf("\n \033[4;1m- ROMEU & JULIETA\033[m");
+                        printf("\n Ingredientes: Goiabada e Mussarela. \n");
+                        totalPedido += precoDoce;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Romeu & julieta, ");
+                        break;
+                    case 18:
+                        printf("\n \033[4;1m- BANANA C/ CANELA\033[m");
+                        printf("\n Ingredientes: Banana, Canela, Leite Condensado e Açúcar. \n");
+                        totalPedido += precoDoce;
+                        strcat(Pizzas[TotaldeVendasRealizadas], "Banana com canela, ");
+                        break;
+                    default:
+                        /* Número fora do cardápio: decrementa contador
+                         * para que a mesma posição seja refeita. */
+                        contador--;
+                        printf("\n \033[31mPEDIDO FORA DO CARDÁPIO...\033[m\n");
+                        sleep(3);
+                }
+            } /* fim do for de pizzas */
+           
+            /* Exibe o total das pizzas no singular ou plural */
+            if(qtdPedido == 1){
+                printf("\n \033[4;1;31mO TOTAL DA PIZZA FOI\033[m: \033[4;1;32mR$%.2lf\033[m \n", totalPedido);
+                printf("\n \033[1;33mTODAS NOSSAS PIZZAS TRADICIONAIS E ESPECIAIS ACOMPANHAM MOLHO DE TOMATE.\033[m \n");
+                usleep(1500000);
+            }
+            else{
+                printf("\n \033[4;1;31mO TOTAL DAS PIZZAS FOI\033[m: \033[4;1;32mR$%.2lf\033[m \n", totalPedido);
+                printf("\n \033[1;33mTODAS NOSSAS PIZZAS TRADICIONAIS E ESPECIAIS ACOMPANHAM MOLHO DE TOMATE.\033[m \n");
+                usleep(1500000);
+            }
+           
+            /* ----------------------------------------------------
+             * Pergunta ao usuário se deseja adicionar bebidas.
+             * O laço do-while valida a resposta (SIM ou NÃO).
+             * getchar() antes de fgets() descarta o '\n' residual
+             * que ficou no buffer após o último scanf.
+             * ---------------------------------------------------- */
+            do{
+                printf("\n \033[4;1;34mDESEJA ACRESCENTAR ALGUMA BEBIDA?\033[m(SIM ou NÃO): ");
+               
+                while(getchar() != '\n'); /* limpa o buffer de entrada */
+               
+                fgets(resposta, sizeof(resposta), stdin);
+                resposta[strcspn(resposta, "\n")] = '\0'; /* remove '\n' do fgets */
+               
+                if(strcmp(resposta, "SIM") != 0 && strcmp(resposta, "sim") != 0 &&
+                   strcmp(resposta, "NÃO") != 0 && strcmp(resposta, "não") != 0){
+                    printf("\n \033[31mOPERAÇÃO INVALIDA!\n TENTE NOVAMENTE...\033[m\n");
+                    sleep(3);
+                    continue;
+                }
+               
+            }while(strcmp(resposta, "SIM") != 0 && strcmp(resposta, "sim") != 0 && strcmp(resposta, "NÃO") != 0 && strcmp(resposta, "não") != 0);
+               
+            /* ======================================================
+             * BLOCO DE BEBIDAS — executado somente se resposta = SIM
+             * ====================================================== */
+            if(strcmp(resposta, "SIM") == 0 || strcmp(resposta, "sim") == 0){
+               
+                /* Exibe o cardápio de bebidas */
+                printf("\n            \033[1;34m🥤 BEBIDAS!🥤\033[m\n");
+                printf("           1 - COCA-COLA \n");
+                printf("           2 - PEPSI \n");
+                printf("           3 - FANTA \n");
+                printf("           4 - SPRITE \n");
+                printf("           5 - DEL VALLE \n");
+                usleep(1500000);
+               
+                printf("\n \033[4;1;34mQUANTAS BEBIDAS DESEJA COMPRAR?\033[m: ");
+                scanf("%d", &qtdBebida);
+               
+                if(qtdBebida < 1){
+                    printf("\n \033[31mSEM REGISTRO DE PEDIDO...\033[m\n");
+                    sleep(1);
+                    continue;
+                }
+               
+                /* Laço for: percorre cada bebida solicitada */
+                for(contador = 1; contador <= qtdBebida; contador++){
+                    printf("\n \033[1mSELECIONE A %d° BEBIDA:\033[m ", contador);
+                    scanf("%d", &bebida);
+                   
+                    /* Switch externo: seleciona a marca da bebida */
+                    switch(bebida){
+                       
+                        /* ---- COCA-COLA ---- */
+                        case 1:
+                            int SC; /* variável local: sabor da Coca-Cola */
+                            do{
+                                printf("\n \033[1m- \033[m\033[1;31mCOCA-COLA\033[m \n");
+                                printf("\n    OPÇÕES: \n");
+                                printf("       1. COCA-COLA ORIGINAL \n");
+                                printf("       2. COCA-COLA ZERO \n");
+                                printf("\n       \033[1;34mQUAL COCA-COLA VOCÊ ESCOLHE?\033[m: ");
+                                scanf("%d", &SC);
+                            }while(SC < 1 || SC > 2);
+                           
+                            /* Switch interno: diferencia Original de Zero */
+                            switch(SC){
+                                case 1: /* Coca-Cola Original */
+                                    int TamC; /* variável local: tamanho da garrafa/lata */
+                                    do{
+                                        printf("\n       \033[1;31mCOCA-COLA \033[m\033[1moriginal\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$3,79\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 600ml.........\033[92mR$6,59\033[m \n");
+                                        printf("            3. 1,5 Litros....\033[92mR$10,89\033[m \n");
+                                        printf("            4. 2 Litros......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamC);
+                                        /* Cada case soma o preço correspondente e registra no histórico */
+                                        switch(TamC){
+                                        case 1:
+                                            printf("\n            COCA-COLA original: Lata 350ml\n");
+                                            totalBebida += 3.79;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            COCA-COLA original: Garrafa 600ml\n");
+                                            totalBebida += 6.59;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola 600ml, ");
+                                            break;
+                                        case 3:
+                                            printf("\n            COCA-COLA original: Garrafa 1,5 Litros\n");
+                                            totalBebida += 10.89;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola 1,5 Litros, ");
+                                            break;
+                                        case 4:
+                                            printf("\n            COCA-COLA original: Garrafa 2 Litros\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamC < 1 || TamC > 4);
+                                break;
+                                case 2: /* Coca-Cola Zero */
+                                    do{
+                                        printf("\n       \033[1;31mCOCA-COLA \033[m\033[1;7mZERO\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$3,79\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 600ml.........\033[92mR$6,59\033[m \n");
+                                        printf("            3. 1,5 Litros....\033[92mR$10,89\033[m \n");
+                                        printf("            4. 2 Litros......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamC);
+                                        switch(TamC){
+                                        case 1:
+                                            printf("\n            COCA-COLA ZERO: Lata 350ml\n");
+                                            totalBebida += 3.79;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola Zero 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            COCA-COLA ZERO: Garrafa 600ml\n");
+                                            totalBebida += 6.59;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola Zero 600ml, ");
+                                            break;
+                                        case 3:
+                                            printf("\n            COCA-COLA ZERO: Garrafa 1,5 Litros\n");
+                                            totalBebida += 10.89;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola Zero1,5 Litros, ");
+                                            break;
+                                        case 4:
+                                            printf("\n            COCA-COLA ZERO: Garrafa 2 Litros\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Coca-cola Zero 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamC < 1 || TamC > 4);
+                                break;
+                            }
+                        break;
+                       
+                        /* ---- PEPSI ---- */
+                        case 2:
+                            int SP; /* variável local: sabor da Pepsi */
+                            do{
+                                printf("\n \033[1m- \033[m\033[1;31mPE\033[m\033[1mP\033[m\033[1;34mSI\033[m \n");
+                                printf("\n    OPÇÕES: \n");
+                                printf("       1. PEPSI ORIGINAL \n");
+                                printf("       2. PEPSI BLACK \n");
+                                printf("       3. PEPSI TWIST \n");
+                                printf("\n       \033[1;34mQUAL PEPSI VOCÊ ESCOLHE?\033[m: ");
+                                scanf("%d", &SP);
+                            }while(SP < 1 || SP > 3);
+                           
+                            /* Switch interno: 3 variações de Pepsi */
+                            switch(SP){
+                                case 1: /* Pepsi Original */
+                                    int TamP; /* variável local: tamanho */
+                                    do{
+                                        printf("\n       \033[1m- \033[m\033[1;31mPE\033[m\033[1mP\033[m\033[1;34mSI \033[m\033[1moriginal\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$3,79\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 2 Litros......\033[92mR$9,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamP);
+                                        switch(TamP){
+                                        case 1:
+                                            printf("\n            PEPSI original: Lata 350ml\n");
+                                            totalBebida += 3.79;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Pepsi 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            PEPSI original: Garrafa 2 Litros\n");
+                                            totalBebida += 9.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Pepsi 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamP < 1 || TamP > 2);
+                                break;
+                                case 2: /* Pepsi Black */
+                                    do{
+                                        printf("\n       \033[1m- \033[m\033[1;31mPE\033[m\033[1mP\033[m\033[1;34mSI \033[m\033[1;7mBLACK\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$3,79\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 1,5 Litros....\033[92mR$7,99\033[m \n");
+                                        printf("            3. 2 Litros......\033[92mR$9,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamP);
+                                        switch(TamP){
+                                        case 1:
+                                            printf("\n            PEPSI BLACK: Lata 350ml\n");
+                                            totalBebida += 3.79;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Pepsi Black 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            PEPSI BLACK: Garrafa 1,5 Litros\n");
+                                            totalBebida += 7.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Pepsi Black 1,5 Litros, ");
+                                            break;
+                                        case 3:
+                                            printf("\n            PEPSI BLACK: Garrafa 2 Litros\n");
+                                            totalBebida += 9.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Pepsi Black 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamP < 1 || TamP > 3);
+                                break;
+                                case 3: /* Pepsi Twist */
+                                    do{
+                                        printf("\n       \033[1m- \033[m\033[1;31mPE\033[m\033[1mP\033[m\033[1;34mSI \033[m\033[1mTWIST\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$3,79\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 2 Litros......\033[92mR$9,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamP);
+                                        switch(TamP){
+                                        case 1:
+                                            printf("\n            PEPSI TWIST: Lata 350ml\n");
+                                            totalBebida += 3.79;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Pepsi Twist 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            PEPSI TWIST: Garrafa 2 Litros\n");
+                                            totalBebida += 9.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Pepsi Twist 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamP < 1 || TamP > 2);
+                                break;
+                            }
+                        break;
+                       
+                        /* ---- FANTA ---- */
+                        case 3:
+                            int SF; /* variável local: sabor da Fanta */
+                            do{
+                                printf("\n \033[1m- FANTA\033[m \n");
+                                printf("\n    OPÇÕES: \n");
+                                printf("       1. FANTA LARANJA \n");
+                                printf("       2. FANTA UVA \n");
+                                printf("       3. FANTA GUARANÁ \n");
+                                printf("\n       \033[1;34mQUAL FANTA VOCÊ ESCOLHE?\033[m: ");
+                                scanf("%d", &SF);
+                            }while(SF < 1 || SF > 3);
+                           
+                            /* Switch interno: 3 sabores de Fanta */
+                            switch(SF){
+                                case 1: /* Fanta Laranja */
+                                    int TamF; /* variável local: tamanho */
+                                    do{
+                                        printf("\n       \033[1m- FANTA \033[m\033[0;33mLARANJA\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$4,69\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 2 Litros......\033[92mR$10,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamF);
+                                        switch(TamF){
+                                        case 1:
+                                            printf("\n            FANTA Laranja: Lata 350ml\n");
+                                            totalBebida += 4.69;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Fanta Laranja 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            FANTA Laranja: Garrafa 2 Litros\n");
+                                            totalBebida += 10.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Fanta Laranja 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamF < 1 || TamF > 2);
+                                break;
+                                case 2: /* Fanta Uva */
+                                    do{
+                                        printf("\n       \033[1m- FANTA \033[m\033[1;35mUVA\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$4,69\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 2 Litros......\033[92mR$10,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamF);
+                                        switch(TamF){
+                                        case 1:
+                                            printf("\n            FANTA Uva: Lata 350ml\n");
+                                            totalBebida += 4.69;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Fanta Uva 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            FANTA Uva: Garrafa 2 Litros\n");
+                                            totalBebida += 10.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Fanta Uva 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamF < 1 || TamF > 2);
+                                break;
+                                case 3: /* Fanta Guaraná */
+                                    do{
+                                        printf("\n       \033[1m- FANTA \033[m\033[0;31mGUARANÁ\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$4,69\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 2 Litros......\033[92mR$9,49\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamF);
+                                        switch(TamF){
+                                        case 1:
+                                            printf("\n            FANTA GUARANÁ: Lata 350ml\n");
+                                            totalBebida += 4.69;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Fanta Guaraná 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            FANTA GUARANÁ: Garrafa 2 Litros\n");
+                                            totalBebida += 9.49;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Fanta Guaraná 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamF < 1 || TamF > 2);
+                                break;
+                            }
+                        break;
+                       
+                        /* ---- SPRITE ---- */
+                        case 4:
+                            int SS; /* variável local: sabor do Sprite */
+                            do{
+                                printf("\n \033[1m- SPRITE\033[m \n");
+                                printf("\n    OPÇÕES: \n");
+                                printf("       1. SPRITE (LIMÃO) \n");
+                                printf("       2. SPRITE SEM AÇÚCAR \n");
+                                printf("\n       \033[1;34mQUAL SPRITE VOCÊ ESCOLHE?\033[m: ");
+                                scanf("%d", &SS);
+                            }while(SS < 1 || SS > 3);
+                           
+                            /* Switch interno: 2 variações de Sprite */
+                            switch(SS){
+                                case 1: /* Sprite Limão */
+                                    int TamS; /* variável local: tamanho */
+                                    do{
+                                        printf("\n       \033[1m- SPRITE \033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$4,69\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 2 Litros......\033[92mR$10,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamS);
+                                        switch(TamS){
+                                        case 1:
+                                            printf("\n            SPRITE: Lata 350ml\n");
+                                            totalBebida += 4.69;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Sprite 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            SPRITE: Garrafa 2 Litros\n");
+                                            totalBebida += 10.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Sprite 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamS < 1 || TamS > 2);
+                                break;
+                                case 2: /* Sprite Sem Açúcar */
+                                    do{
+                                        printf("\n       \033[1m- SPRITE \033[m\033[1;7mSEM AÇÚCAR\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 350ml.........\033[92mR$4,69\033[m \n");
+                                        printf("         GARRAFA:\n");
+                                        printf("            2. 2 Litros......\033[92mR$10,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamS);
+                                        switch(TamS){
+                                        case 1:
+                                            printf("\n            SPRITE Sem Açúcar: Lata 350ml\n");
+                                            totalBebida += 4.69;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Sprite sem Açúcar 350ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            SPRITE Sem Açúcar: Garrafa 2 Litros\n");
+                                            totalBebida += 10.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Sprite sem Açúcar 2 Litros, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamS < 1 || TamS > 2);
+                                break;
+                            }
+                        break;
+                       
+                        /* ---- DEL VALLE ---- */
+                        case 5:
+                            int SDV; /* variável local: sabor do Del Valle */
+                            do{
+                                printf("\n \033[1m- DEL VALLE \033[m \n");
+                                printf("\n    OPÇÕES: \n");
+                                printf("       1. DEL VALLE LARANJA \n");
+                                printf("       2. DEL VALLE MARACUJA \n");
+                                printf("       3. DEL VALLE PÉSSEGO \n");
+                                printf("       4. DEL VALLE UVA \n");
+                                printf("       5. DEL VALLE ABACAXI \n");
+                                printf("       6. DEL VALLE MANGA \n");
+                                printf("\n       \033[1;34mQUAL SABOR DEL VALLE VOCÊ ESCOLHE?\033[m: ");
+                                scanf("%d", &SDV);
+                            }while(SDV < 1 || SDV > 6);
+                           
+                            /* Switch interno: 6 sabores de Del Valle */
+                            switch(SDV){
+                                case 1: /* Del Valle Laranja */
+                                    int TamDV; /* variável local: tamanho */
+                                    do{
+                                        printf("\n       \033[1m- DEL VALLE \033[m\033[0;33mLARANJA\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 290ml.........\033[92mR$5,99\033[m \n");
+                                        printf("         CAIXA:\n");
+                                        printf("            2. 1 Litro.......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamDV);
+                                        switch(TamDV){
+                                        case 1:
+                                            printf("\n            DEL VALLE Laranja: Lata 290ml\n");
+                                            totalBebida += 5.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Laranja 290ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            DEL VALLE Laranja: Caixa 1 Litro\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Laranja 1 Litro, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamDV < 1 || TamDV > 2);
+                                break;
+                                case 2: /* Del Valle Maracujá */
+                                    do{
+                                        printf("\n       \033[1m- DEL VALLE \033[m\033[1;33mMARACUJA\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 290ml.........\033[92mR$5,99\033[m \n");
+                                        printf("         CAIXA:\n");
+                                        printf("            2. 1 Litro.......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamDV);
+                                        switch(TamDV){
+                                        case 1:
+                                            printf("\n            DEL VALLE Maracuja: Lata 290ml\n");
+                                            totalBebida += 5.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Maracuja 290ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            DEL VALLE Maracuja: Caixa 1 Litro\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Maracuja 1 Litro, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamDV < 1 || TamDV > 2);
+                                break;
+                                case 3: /* Del Valle Pêssego */
+                                    do{
+                                        printf("\n       \033[1m- DEL VALLE \033[m\033[0;31mPÉSSEGO\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 290ml.........\033[92mR$5,99\033[m \n");
+                                        printf("         CAIXA:\n");
+                                        printf("            2. 1 Litro.......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamDV);
+                                        switch(TamDV){
+                                        case 1:
+                                            printf("\n            DEL VALLE Péssego: Lata 290ml\n");
+                                            totalBebida += 5.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Péssego 290ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            DEL VALLE Péssego: Caixa 1 Litro\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Péssego 1 Litro, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamDV < 1 || TamDV > 2);
+                                break;
+                                case 4: /* Del Valle Uva */
+                                    do{
+                                        printf("\n       \033[1m- DEL VALLE \033[m\033[1;35mUVA\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 290ml.........\033[92mR$5,99\033[m \n");
+                                        printf("         CAIXA:\n");
+                                        printf("            2. 1 Litro.......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamDV);
+                                        switch(TamDV){
+                                        case 1:
+                                            printf("\n            DEL VALLE UVA: Lata 290ml\n");
+                                            totalBebida += 5.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Uva 290ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            DEL VALLE UVA: Caixa 1 Litro\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Uva 1 Litro, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamDV < 1 || TamDV > 2);
+                                break;
+                                case 5: /* Del Valle Abacaxi */
+                                    do{
+                                        printf("\n       \033[1m- DEL VALLE \033[m\033[1;33mABACAXI\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 290ml.........\033[92mR$5,99\033[m \n");
+                                        printf("         CAIXA:\n");
+                                        printf("            2. 1 Litro.......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamDV);
+                                        switch(TamDV){
+                                        case 1:
+                                            printf("\n            DEL VALLE ABACAXI: Lata 290ml\n");
+                                            totalBebida += 5.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Abacaxi 290ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            DEL VALLE ABACAXI: Caixa 1 Litro\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Abacaxi 1 Litro, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamDV < 1 || TamDV > 2);
+                                break;
+                                case 6: /* Del Valle Manga */
+                                    do{
+                                        printf("\n       \033[1m- DEL VALLE \033[m\033[1;33mMANGA\033[m \n");
+                                        printf("\n       \033[1mCAPACIDADE LÍQUIDA E VALOR\033[m \n");
+                                        printf("\n         LATA:\n            1. 290ml.........\033[92mR$5,99\033[m \n");
+                                        printf("         CAIXA:\n");
+                                        printf("            2. 1 Litro.......\033[92mR$13,99\033[m \n");
+                                        printf("\n       \033[1;4;34mQUAL TAMANHO DESEJA?:\033[m ");
+                                        scanf("%d", &TamDV);
+                                        switch(TamDV){
+                                        case 1:
+                                            printf("\n            DEL VALLE MANGA: Lata 290ml\n");
+                                            totalBebida += 5.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Manga 290ml, ");
+                                            break;
+                                        case 2:
+                                            printf("\n            DEL VALLE MANGA: Caixa 1 Litro\n");
+                                            totalBebida += 13.99;
+                                            strcat(Bebidas[TotaldeVendasRealizadas], "Del Valle Manga 1 Litro, ");
+                                            break;
+                                        default:
+                                            printf("\n            OPÇÃO INVALIDA! tente novamente...\n");
+                                        }
+                                    }while(TamDV < 1 || TamDV > 2);
+                                break;
+                            }
+                        break;
+
+                        default:
+                            /* Número fora do cardápio de bebidas:
+                             * decrementa contador para repetir a posição. */
+                            contador--;
+                            printf("\n \033[31mBEBIDA, FORA DO CARDÁPIO...\033[m\n");
+                            sleep(3);
+                    }
+                } /* fim do for de bebidas */
+               
+                /* Exibe o total das bebidas no singular ou plural */
+                if(qtdBebida == 1){
+                    printf("\n \033[4;1;31mO TOTAL DA BEBIDA FOI\033[m: \033[4;1;32mR$%.2lf\033[m \n", totalBebida);
+                    sleep(3);
+                }
+                else{
+                    printf("\n \033[4;1;31mO TOTAL DAS BEBIDAS FOI\033[m: \033[4;1;32mR$%.2lf\033[m \n", totalBebida);
+                    sleep(3);
+                }
+               
+                system("clear");
+               
+                /* ----------------------------------------------------
+                 * RESUMO FINAL DO PEDIDO (com bebida)
+                 * Exibe subtotais e o total geral, depois salva
+                 * o valor na posição atual de HistoricoPedidos e
+                 * incrementa o contador de vendas.
+                 * ---------------------------------------------------- */
+                printf("\n \033[1;92mFINALIZANDO PEDIDO...\033[m\n");
+                sleep(2);
+               
+                printf("\n \033[1;93mTOTAL DAS PIZZAS FOI\033[m: \033[4;32mR$%.2lf\033[m \n", totalPedido);
+                sleep(1);
+               
+                printf("\n \033[1;91mTOTAL DAS BEBIDAS FOI\033[m: \033[4;32mR$%.2lf\033[m \n", totalBebida);
+                sleep(1);
+               
+                total = (totalPedido + totalBebida); /* calcula o subtotal completo */
+               
+                printf("\n \033[1;93mO SUBTOTAL FOI DE\033[m: \033[4;32mR$%.2lf\033[m \n", total);
+                sleep(1);
+               
+                printf("\n \033[1mOBRIGADO(a) PELA PREFERÊNCIA!\033[m\n");
+                sleep(50);
+               
+                /* Registra o total do pedido no vetor histórico e avança o índice */
+                HistoricoPedidos[TotaldeVendasRealizadas] = total;
+                TotaldeVendasRealizadas++;
+               
+            }else if(strcmp(resposta, "NÃO") == 0 || strcmp(resposta, "não") == 0){
+               
+                /* ----------------------------------------------------
+                 * RESUMO FINAL DO PEDIDO (sem bebida)
+                 * Apenas o total das pizzas é exibido e salvo.
+                 * ---------------------------------------------------- */
+                system("clear");
+                printf("\n \033[1;92mFINALIZANDO PEDIDO...\033[m\n");
+                sleep(2);
+               
+                printf("\n \033[1;93mTOTAL DO PEDIDO FOI\033[m: \033[4;32mR$%.2lf\033[m \n", totalPedido);
+                sleep(1);
+               
+                printf("\n \033[1mOBRIGADO(a) PELA PREFERÊNCIA!\033[m\n");
+                sleep(50);
+               
+                HistoricoPedidos[TotaldeVendasRealizadas] = totalPedido;
+                TotaldeVendasRealizadas++;
+            }
+        } /* fim if(opc == 1) */
+       
+        /* ======================================================
+         * OPÇÃO 2 — REGISTRO DE PEDIDOS
+         * Percorre o vetor HistoricoPedidos e exibe cada venda
+         * com suas pizzas, bebidas e valor total.
+         * Ao final, mostra o faturamento acumulado do dia.
+         * ====================================================== */
+        else if(opc == 2){
+            system("clear");
+            printf("\n          \033[4;1;34m REGISTRO DE PEDIDOS DO DIA \033[m \n\n");
+            if(TotaldeVendasRealizadas == 0){
+                /* Nenhuma venda ainda: informa o usuário */
+                printf(" \033[31;1mNenhuma venda registrada ainda.\033[m\n");
+                sleep(3);
+                printf("\n \033[1;92mPressione ENTER para voltar ao menu...\033[m");
+                int v; while ((v = getchar()) != '\n' && v != EOF);
+                getchar();
+            }
+            else{
+                /* Percorre todos os pedidos registrados e exibe o detalhamento */
+                for(int i = 0; i < TotaldeVendasRealizadas; i++){
+                    printf("\n \033[1m%d° PEDIDO:\033[m", i + 1);
+                    printf("\n      \033[4;1mPIZZAS\033[m: %s ", Pizzas[i]);
+                    printf("\n      \033[4;1mBEBIDAS\033[m: %s ", Bebidas[i]);
+                    printf("\n\n \033[1mVALOR TOTAL DO %d° PEDIDO:\033[m \033[32mR$%.2lf\033[m \n", i + 1, HistoricoPedidos[i]);
+                    TotalGanho += HistoricoPedidos[i]; /* acumula faturamento */
+                }
+                sleep(2);
+                printf("\n TOTAL DAS VENDAS: \033[32mR$%.2lf\033[m \n", TotalGanho);
+                sleep(3);
+                printf("\n \033[1;92mPressione ENTER para voltar ao menu...\033[m");
+                int v; while ((v = getchar()) != '\n' && v != EOF);
+                getchar();
+            }
+        }
+        /* ======================================================
+         * OPÇÃO 3 — LISTA DE PRODUTOS
+         * ====================================================== */
+        else if(opc == 3){
+            printf("\n  \033[1mLISTA DE PRODUTOS A SEGUIR:\033[m \n");
+            sleep(2);
+            printf("\n                                                                        \033[4;1;40m🍕  CARDÁPIO 🍕\033[m\n");
+            printf("\n            \033[1;31m🔥 TRADICIONAIS DA FAMÍLIA!🔥\033[m                       \033[1;33m⭐ PIZZAS ESPECIAIS!⭐\033[m                             \033[1;36m🍫 PIZZAS DOCES!🍫\033[m\n");
+            printf("           1 - MUSSARELA.................\033[4;1mR$29,90\033[m            8  - 4 QUEIJOS................\033[4;1mR$39,90\033[m            15 - BRIGADEIRO................\033[4;1mR$44,90\033[m\n");
+            printf("           2 - CALABRESA.................\033[4;1mR$29,90\033[m            9  - MODA DA CASA.............\033[4;1mR$39,90\033[m            16 - CHOCOLATE C/ MORANGO......\033[4;1mR$44,90\033[m\n");
+            printf("           3 - BAURU.....................\033[4;1mR$29,90\033[m            10 - BRÓCOLIS.................\033[4;1mR$39,90\033[m            17 - ROMEU & JULIETA...........\033[4;1mR$44,90\033[m\n");
+            printf("           4 - FRANGO COM CATUPIRY.......\033[4;1mR$29,90\033[m            11 - BACON....................\033[4;1mR$39,90\033[m            18 - BANANA COM CANELA.........\033[4;1mR$44,90\033[m\n");
+            printf("           5 - TOSCANA...................\033[4;1mR$29,90\033[m            12 - MILHO....................\033[4;1mR$39,90\033[m\n");
+            printf("           6 - BAIANA....................\033[4;1mR$29,90\033[m            13 - ATUM.....................\033[4;1mR$39,90\033[m\n");
+            printf("           7 - PORTUGUESA................\033[4;1mR$29,90\033[m            14 - PEPPERONI................\033[4;1mR$39,90\033[m\n");
+            printf("\n            \033[1;34m🥤 BEBIDAS!🥤\033[m\n");
+            printf("           1 - COCA-COLA \n");
+            printf("           2 - PEPSI \n");
+            printf("           3 - FANTA \n");
+            printf("           4 - SPRITE \n");
+            printf("           5 - DEL VALLE \n");
+            sleep(3);
+            printf("\n \033[1;92mPressione ENTER para voltar ao menu...\033[m");
+            int v; while ((v = getchar()) != '\n' && v != EOF);
+            getchar();
+        }
+        /* ======================================================
+         * OPÇÃO 0 — SAIR
+         * ====================================================== */
+        else if(opc == 0){
+            printf("\n \033[1;92mENCERRANDO...\n");
+            sleep(3);
+        }
+        /* Tratamento para opções entre 1–4 não mapeadas acima */
+        else{
+            printf("\n \033[1mPARECE QUE VOCÊ NÃO TEM VONTADE DE TESTAR O PROGRAMA.\033[m \n");
+            sleep(6);
+        }
+    }while(opc != 0); /* repete o menu principal até o usuário escolher 0 */
+    return 0;
+}
