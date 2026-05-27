@@ -920,7 +920,7 @@ int main()
                 sleep(1);
                
                 printf("\n \033[1mOBRIGADO(a) PELA PREFERÊNCIA!\033[m\n");
-                sleep(50);
+                sleep(5);
                
                 /* Registra o total do pedido no vetor histórico e avança o índice */
                 HistoricoPedidos[TotaldeVendasRealizadas] = total;
@@ -940,7 +940,7 @@ int main()
                 sleep(1);
                
                 printf("\n \033[1mOBRIGADO(a) PELA PREFERÊNCIA!\033[m\n");
-                sleep(50);
+                sleep(5);
                
                 HistoricoPedidos[TotaldeVendasRealizadas] = totalPedido;
                 TotaldeVendasRealizadas++;
